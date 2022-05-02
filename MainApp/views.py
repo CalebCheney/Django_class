@@ -1,7 +1,7 @@
 from django.shortcuts import render , redirect
 
-from .forms import TopicForm
-from .models import Topic #adding topics needs to be imported
+from .forms import TopicForm, EntryForm
+from .models import Topic, Entry #adding topics needs to be imported
 
 # Create your views here.
 
@@ -38,5 +38,36 @@ def new_topic(request):
     return render(request, 'MainApp/new_topic.html', context)
 
 
+def new_entry(request, topic_id):
+    topic = Topic.objects.get(id=topic_id) #creates instance 'topic' from models 'Topic'
+    
+    if request.method != 'POST':
+        form = EntryForm()
+    else:
+        form = EntryForm(data=request.POST)
+
+        if form.is_valid():
+            new_entry = form.save(commit=False)
+            new_entry.topic = topic 
+            new_entry.save()
+            return redirect('MainApp:topic',topic_id=topic_id)
+
+    context = {'form':form, 'topic':topic}
+    return render(request, 'MainApp/new_entry.html', context)
 
 
+def edit_entry(request, entry_id):
+    entry = Entry.objects.get(id=entry_id)
+    topic = entry.topic
+
+    if request.method != 'POST':
+        form = EntryForm(instance=entry) #brings in old entry so that we can edit it GET INSTANCE
+    else:
+        form = EntryForm(instance=entry, data=request.POST) #POST INSTANCE
+
+        if form.is_valid():
+            form.save()
+            return redirect('MainApp:topic',topic_id=topic.id)
+
+    context = {'form':form, 'topic':topic, 'entry':entry} 
+    return render(request, 'MainApp/edit_entry.html', context)
